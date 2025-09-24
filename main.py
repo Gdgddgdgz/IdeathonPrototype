@@ -65,19 +65,20 @@ elif choice == "Bidder Dashboard":
 # ------------------ FAQ SECTION ------------------
 elif choice == "FAQs":
     st.header("❓ FAQs")
-    st.write("""
-    **How is winning probability calculated?**  
-    Based on bidder documents and historical performance.
 
-    **Can I submit a tender with missing documents?**  
-    Software flags incomplete submission and lowers probability.
+    with st.expander("How is winning probability calculated?"):
+        st.write("It uses bidder documents and historical performance to estimate the chance of winning a tender.")
 
-    **Does high rating guarantee winning?**  
-    No, but it increases chances.
+    with st.expander("Can I submit a tender with missing documents?"):
+        st.write("The software will flag incomplete submissions and reduce the probability score.")
 
-    **How often is bidder rating updated?**  
-    After every tender submission.
+    with st.expander("Does high rating guarantee winning?"):
+        st.write("No. High rating increases chances, but tender-specific factors matter.")
 
-    **Why is my profile low-rated?**  
-    Feedback includes past tender success, documents missing, and timeliness.
-    """)
+    with st.expander("How often is bidder rating updated?"):
+        st.write("After each tender submission, ratings are recalculated automatically.")
+
+    with st.expander("Can I see why my profile is low-rated?"):
+        st.write("Yes. The software provides feedback on past tenders, document gaps, and on-time submission stats.")
+    with st.expander("Is my data secure?"):
+        st.write("Yes. We use encryption and secure storage to protect your information.")
