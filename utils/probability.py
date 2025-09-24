@@ -1,4 +1,8 @@
 def calculate_probability(bidder, tender):
+    """
+    Returns probability (%) of winning a tender for a bidder,
+    taking into account missing documents.
+    """
     base_score = 50
     total_docs = len(tender['required_docs'])
     present_docs = [d for d in tender['required_docs'] if d in bidder['documents']]
@@ -12,4 +16,5 @@ def calculate_probability(bidder, tender):
 
     probability = base_score + doc_score - doc_penalty
     return min(round(probability), 100)
+
 

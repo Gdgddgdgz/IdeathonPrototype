@@ -1,11 +1,12 @@
 import streamlit as st
 from tender_upload import upload_tender
 from bidder_dashboard import view_tenders
+from bidder_upload import add_bidder
 
 st.set_page_config(page_title="TenderMirror", layout="wide")
-st.title("📝 TenderMirror Hackathon Demo")
+st.title("📝 TenderX Ideathon Demo")
 st.sidebar.header("Menu")
-menu = ["Tender Creator", "Bidder Dashboard", "FAQs"]
+menu = ["Tender Creator", "Bidder Creator", "Bidder Dashboard", "FAQs"]
 choice = st.sidebar.selectbox("Go to", menu)
 
 # ------------------ TENDER CREATOR ------------------
@@ -22,6 +23,21 @@ if choice == "Tender Creator":
         else:
             st.error("Please fill in all fields!")
 
+# ------------------ BIDDER CREATOR ------------------
+elif choice == "Bidder Creator":
+    st.header("👤 Create New Bidder")
+
+    bidder_name = st.text_input("Bidder Name")
+    docs = st.text_area("Documents (comma separated)")
+
+    if st.button("Add Bidder"):
+        if bidder_name and docs:
+            documents = [d.strip() for d in docs.split(",")]
+            bidder_id = add_bidder(bidder_name, documents)
+            st.success(f"Bidder '{bidder_name}' added successfully with ID: {bidder_id}")
+        else:
+            st.error("Please fill in all fields!")
+
 # ------------------ BIDDER DASHBOARD ------------------
 elif choice == "Bidder Dashboard":
     st.header("👤 Bidder Dashboard")
@@ -33,8 +49,6 @@ elif choice == "Bidder Dashboard":
     if st.button("View Tenders"):
         try:
             tenders_status = view_tenders(bidder_id)
-            # DEBUG: Check output
-           # st.write(tenders_status)
 
             filtered = []
             for t in tenders_status:
@@ -50,7 +64,8 @@ elif choice == "Bidder Dashboard":
             else:
                 for t in filtered:
                     with st.expander(t['tender_name']):
-                        color = "green" if t['rating'] == "high" else "red"
+                        # Colored rating
+                        color = "green" if t['rating'] == "high" else ("orange" if t['rating']=="medium" else "red")
                         st.markdown(f"<span style='color:{color}; font-weight:bold'>{t['rating'].upper()} RATED</span>", unsafe_allow_html=True)
                         st.markdown(f"**Probability:** {t['probability']}%")
                         st.markdown("**Documents:**")
@@ -80,5 +95,6 @@ elif choice == "FAQs":
 
     with st.expander("Can I see why my profile is low-rated?"):
         st.write("Yes. The software provides feedback on past tenders, document gaps, and on-time submission stats.")
+
     with st.expander("Is my data secure?"):
         st.write("Yes. We use encryption and secure storage to protect your information.")
