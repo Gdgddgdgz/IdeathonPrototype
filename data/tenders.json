@@ -1,10 +1,4 @@
 [
-    {
-        "name": "Bridge Construction Tender",
-        "required_docs": ["Company Registration", "GST Certificate", "Financial Statement", "Previous Project References"]
-    },
-    {
-        "name": "Road Repair Tender",
-        "required_docs": ["Company Registration", "GST Certificate", "Financial Statement"]
-    }
+    {"name":"Bridge Tender","required_docs":["Company Registration","GST Certificate","Financial Statement"],"description_keywords":["bridge","construction","foundation"]},
+    {"name":"Road Tender","required_docs":["Company Registration","GST Certificate"],"description_keywords":["road","repair","asphalt"]}
 ]

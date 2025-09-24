@@ -2,15 +2,16 @@
     {
         "id": 1,
         "name": "ABC Corp",
-        "tenders_won": 5,
-        "on_time": 90,
-        "documents": ["Company Registration", "GST Certificate", "Financial Statement"]
+        "documents": [
+            "Company Registration",
+            "GST Certificate"
+        ]
     },
     {
         "id": 2,
         "name": "XYZ Ltd",
-        "tenders_won": 1,
-        "on_time": 60,
-        "documents": ["Company Registration", "GST Certificate"]
-    }
+        "documents": [
+            "Company Registration"
+        ]
+    } 
 ]

@@ -1,12 +1,15 @@
 import json
 
-def upload_tender(tender_name, required_docs):
+def upload_tender(name, required_docs, description_keywords=[]):
+    """
+    Adds a tender to tenders.json
+    """
     tender = {
-        "name": tender_name,
-        "required_docs": required_docs
+        "name": name,
+        "required_docs": required_docs,
+        "description_keywords": description_keywords
     }
 
-    # Load existing tenders
     try:
         with open("data/tenders.json") as f:
             tenders = json.load(f)
@@ -17,3 +20,4 @@ def upload_tender(tender_name, required_docs):
     with open("data/tenders.json", "w") as f:
         json.dump(tenders, f, indent=4)
     return "Tender uploaded successfully!"
+
