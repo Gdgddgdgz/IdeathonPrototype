@@ -3,7 +3,7 @@ from tender_upload import upload_tender
 from bidder_dashboard import view_tenders
 
 st.set_page_config(page_title="TenderMirror", layout="wide")
-st.title("📝 TenderX Hackathon Demo")
+st.title("📝 TenderX Ideathon Demo")
 st.sidebar.header("Menu")
 menu = ["Tender Creator", "Bidder Dashboard", "FAQs"]
 choice = st.sidebar.selectbox("Go to", menu)
