@@ -12,8 +12,16 @@ from bidder_dashboard import (
 import json
 import plotly.express as px
 
+# ---------------- Page config ----------------
 st.set_page_config(page_title="TenderX", layout="wide")
-st.title("📝 TenderX Ideathon Prototype")
+
+# ---------------- Centered Top Title ----------------
+st.markdown(
+    """
+    <h1 style='text-align: center; margin-top: 0px;'>📝 TenderX Ideathon Prototype</h1>
+    """,
+    unsafe_allow_html=True
+)
 
 # ------------------ Sidebar ------------------
 menu = st.sidebar.radio("Navigate", ["Tender Creator", "Bidder", "Reviews", "FAQs"])
@@ -122,11 +130,10 @@ elif menu == "Bidder":
 
                             st.progress(prob)
 
-                            if result['missing_docs']:
-                                st.warning(f"Missing docs: {', '.join(result['missing_docs'])}")
-                            if prob < 50:
-                                st.info("Consider improving proposal or submitting missing documents.")
-                                st.markdown("_💡 Suggestion: Add more relevant keywords and ensure all required docs are attached._")
+                            if result['missing_docs'] or prob < 50:
+                                st.info("💡 Suggestions to improve proposal:")
+                                for sug in result.get("suggestions", []):
+                                    st.markdown(f"- {sug}")
 
                             all_probs = all_bidders_probabilities(selected_tender)
                             if all_probs:
@@ -140,7 +147,7 @@ elif menu == "Bidder":
                                 st.success("Proposal submitted successfully!")
 
                             # ------------------ Tender Reviews (inside Bidder workflow) ------------------
-                            st.subheader("⭐ Tender Review for this Submission")
+                            st.subheader("🌟 Tender Review for this Submission")
                             rating = st.slider("Rating", 1, 5, 3, key=f"rating_{bidder_id}_{selected_tender}")
                             review_text = st.text_area("Write Review", key=f"review_{bidder_id}_{selected_tender}")
                             if st.button("Submit Review", key=f"reviewbtn_{bidder_id}_{selected_tender}"):
@@ -149,7 +156,7 @@ elif menu == "Bidder":
 
 # ------------------ REVIEWS ------------------
 elif menu == "Reviews":
-    st.header("⭐ Tender Reviews & Ratings")
+    st.header("🌟 Tender Reviews & Ratings")
 
     with st.expander("Add Review for Submission"):
         tenders = get_tenders()
@@ -171,7 +178,7 @@ elif menu == "Reviews":
             reviews = get_reviews(tender_name)
             if reviews:
                 for r in reviews:
-                    st.write(f"**Bidder:** {r['bidder_id']} | **Rating:** {r['rating']} ⭐")
+                    st.write(f"**Bidder:** {r['bidder_id']} | **Rating:** {r['rating']} 🌟")
                     st.write(f"Review: {r['review']}")
                     st.markdown("---")
             else:
@@ -197,6 +204,7 @@ elif menu == "FAQs":
 
     with st.expander("Can I see why my profile is low-rated?"):
         st.write("Feedback includes missing docs and proposal match against tender.")
+
 
 
 
