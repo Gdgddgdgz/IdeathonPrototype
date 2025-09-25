@@ -1,4 +1,44 @@
 [
-    {"name":"Bridge Tender","required_docs":["Company Registration","GST Certificate","Financial Statement"],"description_keywords":["bridge","construction","foundation"]},
-    {"name":"Road Tender","required_docs":["Company Registration","GST Certificate"],"description_keywords":["road","repair","asphalt"]}
+  {
+    "name": "Road Construction Tender",
+    "required_docs": ["PAN", "GST", "Work Experience"],
+    "keywords": ["construction", "road", "infrastructure"],
+    "submissions": [
+      {
+        "bidder_id": "B1",
+        "documents": ["PAN", "GST", "Work Experience"],
+        "text": "Our proposal covers end-to-end road building with modern equipment.",
+        "rating": 4,
+        "review": "Good proposal, but could include more detail on budget planning."
+      },
+      {
+        "bidder_id": "B2",
+        "documents": ["PAN", "GST"],
+        "text": "We specialize in road construction with high-quality material sourcing.",
+        "rating": 5,
+        "review": "Excellent proposal — strong technical coverage and experience."
+      }
+    ]
+  },
+  {
+    "name": "IT Services Tender",
+    "required_docs": ["Company Registration", "ISO Certification"],
+    "keywords": ["software", "IT", "cloud", "security"],
+    "submissions": [
+      {
+        "bidder_id": "B3",
+        "documents": ["Company Registration", "ISO Certification"],
+        "text": "We offer cloud migration and managed security services.",
+        "rating": 5,
+        "review": "Very professional — strong credentials and clear plan."
+      },
+      {
+        "bidder_id": "B4",
+        "documents": ["Company Registration"],
+        "text": "We provide affordable IT outsourcing services.",
+        "rating": 3,
+        "review": "Basic proposal, missing ISO Certification."
+      }
+    ]
+  }
 ]

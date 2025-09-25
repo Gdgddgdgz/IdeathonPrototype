@@ -6,6 +6,7 @@ DATA_DIR = "data"
 TENDERS_FILE = os.path.join(DATA_DIR, "tenders.json")
 BIDDERS_FILE = os.path.join(DATA_DIR, "bidders.json")
 
+# Ensure data directory exists
 if not os.path.exists(DATA_DIR):
     os.makedirs(DATA_DIR)
 for file in [TENDERS_FILE, BIDDERS_FILE]:
@@ -13,34 +14,35 @@ for file in [TENDERS_FILE, BIDDERS_FILE]:
         with open(file, "w") as f:
             json.dump([], f)
 
+# ------------------ Tender & Proposal Functions ------------------
+
 def get_tenders():
     with open(TENDERS_FILE, "r") as f:
         return json.load(f)
 
+def save_tenders(tenders):
+    with open(TENDERS_FILE, "w") as f:
+        json.dump(tenders, f, indent=2)
+
 def compare_submission(bidder_id, tender_name, submission_docs, submission_text):
-    with open(TENDERS_FILE, "r") as f:
-        tenders = json.load(f)
-    with open(BIDDERS_FILE, "r") as f:
-        bidders = json.load(f)
-
+    tenders = get_tenders()
     tender = next((t for t in tenders if t['name'] == tender_name), None)
-    bidder = next((b for b in bidders if b['id'] == bidder_id), None)
+    if not tender:
+        return None
 
-    if not tender or not bidder:
-        return {"probability": 0, "missing_docs": [], "present_docs": [], "suggestions": []}
+    required_docs = tender.get("required_docs", [])
+    keywords = tender.get("keywords", [])
 
-    required = tender.get("required_docs", [])
-    keywords = tender.get("keywords", [])  # ✅ safe access
-    present_docs = [d for d in submission_docs if d in required]
-    missing_docs = [d for d in required if d not in submission_docs]
+    present_docs = [d for d in submission_docs if d in required_docs]
+    missing_docs = [d for d in required_docs if d not in submission_docs]
 
-    base_prob = 50
-    prob = base_prob + len(present_docs) * 10 - len(missing_docs) * 15
+    # base probability from documents
+    prob = 50 + len(present_docs)*10 - len(missing_docs)*15
     if any(k.lower() in submission_text.lower() for k in keywords):
         prob += 20
     prob = max(0, min(100, prob))
 
-    # ✅ Suggestions
+    # Suggestions for bidder improvement
     suggestions = []
     if missing_docs:
         suggestions.append(f"Add missing documents: {', '.join(missing_docs)}")
@@ -59,41 +61,80 @@ def compare_submission(bidder_id, tender_name, submission_docs, submission_text)
     }
 
 def all_bidders_probabilities(tender_name):
-    with open(TENDERS_FILE, "r") as f:
-        tenders = json.load(f)
-    with open(BIDDERS_FILE, "r") as f:
-        bidders = json.load(f)
-
+    tenders = get_tenders()
     tender = next((t for t in tenders if t['name'] == tender_name), None)
-    if not tender:
+    if not tender or "submissions" not in tender:
         return []
 
     results = []
-    for bidder in bidders:
-        random_prob = random.randint(30, 90)
-        results.append({
-            "bidder_id": bidder['id'],
-            "bidder_name": bidder['name'],
-            "probability": random_prob
-        })
+    for sub in tender.get("submissions", []):
+        docs = sub.get("documents", [])
+        text = sub.get("text", "")
+        result = compare_submission(sub["bidder_id"], tender_name, docs, text)
+        if result:
+            results.append({
+                "bidder_id": sub["bidder_id"],
+                "bidder_name": sub["bidder_id"],
+                "probability": result["probability"]
+            })
     return results
 
-def submit_proposal(bidder_id, tender_name, submission_docs, submission_text):
-    with open(TENDERS_FILE, "r") as f:
-        tenders = json.load(f)
+def submit_proposal(bidder_id, tender_name, documents, text):
+    tenders = get_tenders()
+    tender = next((t for t in tenders if t['name'] == tender_name), None)
+    if not tender:
+        return
 
-    for tender in tenders:
-        if tender['name'] == tender_name:
-            if "submissions" not in tender:
-                tender["submissions"] = []
-            tender['submissions'].append({
-                "bidder_id": bidder_id,
-                "documents": submission_docs,
-                "text": submission_text
-            })
+    if "submissions" not in tender:
+        tender["submissions"] = []
 
-    with open(TENDERS_FILE, "w") as f:
-        json.dump(tenders, f, indent=2)
+    tender["submissions"].append({
+        "bidder_id": bidder_id,
+        "documents": documents,
+        "text": text,
+        "rating": None,
+        "review": ""
+    })
 
+    save_tenders(tenders)
 
+# ------------------ Review & Rating Functions ------------------
 
+def add_review(tender_name, bidder_id, rating, review):
+    tenders = get_tenders()
+    tender = next((t for t in tenders if t['name'] == tender_name), None)
+    if not tender:
+        return
+
+    if "submissions" not in tender:
+        tender["submissions"] = []
+
+    found = False
+    for sub in tender["submissions"]:
+        if str(sub["bidder_id"]) == str(bidder_id):
+            sub["rating"] = rating
+            sub["review"] = review
+            found = True
+            break
+
+    if not found:
+        tender["submissions"].append({
+            "bidder_id": bidder_id,
+            "documents": [],
+            "text": "",
+            "rating": rating,
+            "review": review
+        })
+
+    save_tenders(tenders)
+
+def get_reviews(tender_name):
+    tenders = get_tenders()
+    tender = next((t for t in tenders if t["name"] == tender_name), None)
+    if not tender or "submissions" not in tender:
+        return []
+
+    return [
+        {"bidder_id": sub.get("bidder_id"), "rating": sub.get("rating"), "review": sub.get("review")}
+        for sub in tender["submissions"] if sub.get("review")
+    ]

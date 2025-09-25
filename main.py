@@ -1,7 +1,14 @@
 import streamlit as st
 from tender_upload import upload_tender
 from bidder_upload import add_bidder
-from bidder_dashboard import compare_submission, get_tenders, all_bidders_probabilities, submit_proposal
+from bidder_dashboard import (
+    compare_submission,
+    get_tenders,
+    all_bidders_probabilities,
+    submit_proposal,
+    add_review,
+    get_reviews
+)
 import json
 import plotly.express as px
 
@@ -9,7 +16,7 @@ st.set_page_config(page_title="TenderX", layout="wide")
 st.title("📝 TenderX Ideathon Prototype")
 
 # ------------------ Sidebar ------------------
-menu = st.sidebar.radio("Navigate", ["Tender Creator", "Bidder", "FAQs"])
+menu = st.sidebar.radio("Navigate", ["Tender Creator", "Bidder", "Reviews", "FAQs"])
 
 # ------------------ TENDER CREATOR ------------------
 if menu == "Tender Creator":
@@ -68,7 +75,7 @@ elif menu == "Bidder":
         try:
             with open("data/bidders.json") as f:
                 bidders = json.load(f)
-        except:
+        except FileNotFoundError:
             bidders = []
 
         bidder = next((b for b in bidders if b['id'] == bidder_id), None)
@@ -102,8 +109,10 @@ elif menu == "Bidder":
                         if result:
                             prob = result['probability']
                             color = "green" if prob >= 70 else ("orange" if prob >= 50 else "red")
-                            st.markdown(f"**Probability of Winning:** <span style='color:{color}'>{prob}%</span>",
-                                        unsafe_allow_html=True)
+                            st.markdown(
+                                f"**Probability of Winning:** <span style='color:{color}'>{prob}%</span>",
+                                unsafe_allow_html=True
+                            )
 
                             st.markdown("**Documents Status:**")
                             for doc in result['present_docs']:
@@ -117,12 +126,7 @@ elif menu == "Bidder":
                                 st.warning(f"Missing docs: {', '.join(result['missing_docs'])}")
                             if prob < 50:
                                 st.info("Consider improving proposal or submitting missing documents.")
-
-                            # ✅ New Suggestions
-                            if result['suggestions']:
-                                st.subheader("Suggestions to Improve")
-                                for s in result['suggestions']:
-                                    st.markdown(f"- {s}")
+                                st.markdown("_💡 Suggestion: Add more relevant keywords and ensure all required docs are attached._")
 
                             all_probs = all_bidders_probabilities(selected_tender)
                             if all_probs:
@@ -134,6 +138,46 @@ elif menu == "Bidder":
                             if st.button("Submit Proposal to Tender"):
                                 submit_proposal(bidder_id, selected_tender, submission_docs, submission_text)
                                 st.success("Proposal submitted successfully!")
+
+                            # ------------------ Tender Reviews (inside Bidder workflow) ------------------
+                            st.subheader("⭐ Tender Review for this Submission")
+                            rating = st.slider("Rating", 1, 5, 3, key=f"rating_{bidder_id}_{selected_tender}")
+                            review_text = st.text_area("Write Review", key=f"review_{bidder_id}_{selected_tender}")
+                            if st.button("Submit Review", key=f"reviewbtn_{bidder_id}_{selected_tender}"):
+                                add_review(selected_tender, bidder_id, rating, review_text)
+                                st.success("Review added successfully!")
+
+# ------------------ REVIEWS ------------------
+elif menu == "Reviews":
+    st.header("⭐ Tender Reviews & Ratings")
+
+    with st.expander("Add Review for Submission"):
+        tenders = get_tenders()
+        if tenders:
+            tender_name = st.selectbox("Select Tender", [t["name"] for t in tenders])
+            bidder_id = st.text_input("Enter Bidder ID")
+            rating = st.slider("Rating", 1, 5, 3)
+            review_text = st.text_area("Write Review")
+            if st.button("Submit Review"):
+                add_review(tender_name, bidder_id, rating, review_text)
+                st.success("Review added successfully!")
+        else:
+            st.info("No tenders available to review.")
+
+    with st.expander("View Reviews"):
+        tenders = get_tenders()
+        if tenders:
+            tender_name = st.selectbox("Select Tender to View Reviews", [t["name"] for t in tenders])
+            reviews = get_reviews(tender_name)
+            if reviews:
+                for r in reviews:
+                    st.write(f"**Bidder:** {r['bidder_id']} | **Rating:** {r['rating']} ⭐")
+                    st.write(f"Review: {r['review']}")
+                    st.markdown("---")
+            else:
+                st.info("No reviews yet for this tender.")
+        else:
+            st.info("No tenders available.")
 
 # ------------------ FAQS PAGE ------------------
 elif menu == "FAQs":
@@ -153,4 +197,6 @@ elif menu == "FAQs":
 
     with st.expander("Can I see why my profile is low-rated?"):
         st.write("Feedback includes missing docs and proposal match against tender.")
+
+
 
