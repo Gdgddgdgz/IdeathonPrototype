@@ -6,7 +6,7 @@ import json
 import plotly.express as px
 
 st.set_page_config(page_title="TenderX", layout="wide")
-st.title("📝 TenderX Hackathon Prototype")
+st.title("📝 TenderX Ideathon Prototype")
 
 # ------------------ Sidebar ------------------
 menu = st.sidebar.radio("Navigate", ["Tender Creator", "Bidder", "FAQs"])
