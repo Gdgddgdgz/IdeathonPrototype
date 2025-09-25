@@ -6,26 +6,13 @@ import json
 import plotly.express as px
 
 st.set_page_config(page_title="TenderX", layout="wide")
-st.title("📝 Tender Ideathon Prototype")
+st.title("📝 TenderX Hackathon Prototype")
 
 # ------------------ Sidebar ------------------
-role = st.sidebar.selectbox("Login as", ["Tender Creator", "Bidder"])
-st.sidebar.markdown("---")
-if st.sidebar.button("FAQs"):
-    st.sidebar.subheader("❓ Generic FAQs")
-    with st.sidebar.expander("How is winning probability calculated?"):
-        st.write("It uses bidder documents and proposal content against tender requirements.")
-    with st.sidebar.expander("Can I submit a tender with missing documents?"):
-        st.write("The system flags missing docs and reduces probability.")
-    with st.sidebar.expander("Does high rating guarantee winning?"):
-        st.write("No, but it increases your chances.")
-    with st.sidebar.expander("How often is bidder rating updated?"):
-        st.write("After every submission, probability is recalculated.")
-    with st.sidebar.expander("Can I see why my profile is low-rated?"):
-        st.write("Feedback includes missing docs and proposal match against tender.")
+menu = st.sidebar.radio("Navigate", ["Tender Creator", "Bidder", "FAQs"])
 
 # ------------------ TENDER CREATOR ------------------
-if role == "Tender Creator":
+if menu == "Tender Creator":
     st.header("📤 Tender Creator Dashboard")
     tender_name = st.text_input("Tender Name")
     docs = st.text_area("Required Documents (comma separated)")
@@ -49,22 +36,21 @@ if role == "Tender Creator":
         st.info("No tenders uploaded yet.")
 
 # ------------------ BIDDER ------------------
-elif role == "Bidder":
+elif menu == "Bidder":
     st.header("👤 Bidder Dashboard")
 
     bidder_id = st.number_input("Enter Bidder ID (0 to create new bidder)", min_value=0, step=1)
     create_new = bidder_id == 0
 
-    # Company-specific info
     company_info = {
-        1: ["Company: ABC Infra Ltd",
-            "Started in 2000",
-            "Specializes in building bridges",
-            "Projects in 10 cities"],
-        2: ["Company: XYZ Infrastructure",
-            "Started in 2010",
-            "Projects in 5 states",
-            "Specializes in road construction"],
+        1: ["Company: Bidder 1",
+            "Started in 2015",
+            "Provides Road infrastructure solutions",
+            "Specializes in highway construction"],
+        2: ["Company: Bidder 2",
+            "Started in 2018",
+            "Provides  bridge construction services",
+            "Specializes in  bridge infrastructure projects"],
     }
 
     if create_new:
@@ -79,7 +65,6 @@ elif role == "Bidder":
             else:
                 st.error("Please fill in all fields!")
     else:
-        # Load bidder
         with open("data/bidders.json") as f:
             bidders = json.load(f)
         bidder = next((b for b in bidders if b['id'] == bidder_id), None)
@@ -95,13 +80,11 @@ elif role == "Bidder":
                 tender_names = [t['name'] for t in tenders]
                 selected_tender = st.selectbox("Select Tender to Submit Proposal", tender_names)
 
-                # Company info always visible
                 st.subheader(f"🏢 Company Info: {bidder['name']}")
                 if bidder_id in company_info:
                     for info in company_info[bidder_id]:
                         st.markdown(f"- {info}")
 
-                # Proposal submission
                 st.subheader("Submit Proposal")
                 submission_docs_text = st.text_area("Enter your documents (comma separated)")
                 submission_text = st.text_area("Paste your proposal here")
@@ -130,7 +113,6 @@ elif role == "Bidder":
                             if prob < 50:
                                 st.info("Consider improving proposal or submitting missing documents.")
 
-                            # Graph
                             all_probs = all_bidders_probabilities(selected_tender)
                             if all_probs:
                                 fig = px.bar(all_probs, x="bidder_name", y="probability", color="probability",
@@ -138,9 +120,26 @@ elif role == "Bidder":
                                 fig.update_layout(title=f"All Bidders Probability for '{selected_tender}'")
                                 st.plotly_chart(fig, use_container_width=True)
 
-                            # ---------------- Submit Proposal Button ----------------
                             if st.button("Submit Proposal to Tender"):
                                 submit_proposal(bidder_id, selected_tender, submission_docs, submission_text)
                                 st.success("Proposal submitted successfully!")
-                        else:
-                            st.error("Bidder or Tender not found.")
+
+# ------------------ FAQS PAGE ------------------
+elif menu == "FAQs":
+    st.header("❓ Frequently Asked Questions")
+
+    with st.expander("How is winning probability calculated?"):
+        st.write("It uses bidder documents and proposal content against tender requirements.")
+
+    with st.expander("Can I submit a tender with missing documents?"):
+        st.write("The system flags missing docs and reduces probability.")
+
+    with st.expander("Does high rating guarantee winning?"):
+        st.write("No, but it increases your chances.")
+
+    with st.expander("How often is bidder rating updated?"):
+        st.write("After every submission, probability is recalculated.")
+
+    with st.expander("Can I see why my profile is low-rated?"):
+        st.write("Feedback includes missing docs and proposal match against tender.")
+
