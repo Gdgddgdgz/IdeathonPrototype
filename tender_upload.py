@@ -1,23 +1,29 @@
 import json
+import os
 
-def upload_tender(name, required_docs, description_keywords=[]):
-    """
-    Adds a tender to tenders.json
-    """
-    tender = {
+DATA_DIR = "data"
+TENDERS_FILE = os.path.join(DATA_DIR, "tenders.json")
+
+# Ensure data dir and file exist
+if not os.path.exists(DATA_DIR):
+    os.makedirs(DATA_DIR)
+if not os.path.exists(TENDERS_FILE):
+    with open(TENDERS_FILE, "w") as f:
+        json.dump([], f)
+
+def upload_tender(name, required_docs, description_keywords):
+    with open(TENDERS_FILE, "r") as f:
+        tenders = json.load(f)
+
+    new_tender = {
         "name": name,
         "required_docs": required_docs,
-        "description_keywords": description_keywords
+        "keywords": description_keywords,
+        "submissions": []
     }
+    tenders.append(new_tender)
 
-    try:
-        with open("data/tenders.json") as f:
-            tenders = json.load(f)
-    except FileNotFoundError:
-        tenders = []
+    with open(TENDERS_FILE, "w") as f:
+        json.dump(tenders, f, indent=2)
 
-    tenders.append(tender)
-    with open("data/tenders.json", "w") as f:
-        json.dump(tenders, f, indent=4)
-    return "Tender uploaded successfully!"
-
+    return f"Tender '{name}' uploaded successfully!"

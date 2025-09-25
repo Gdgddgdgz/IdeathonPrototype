@@ -1,74 +1,80 @@
 import json
 import os
+import random
 
-# Load tenders from JSON
+DATA_DIR = "data"
+TENDERS_FILE = os.path.join(DATA_DIR, "tenders.json")
+BIDDERS_FILE = os.path.join(DATA_DIR, "bidders.json")
+
+# Ensure data dir and files exist
+if not os.path.exists(DATA_DIR):
+    os.makedirs(DATA_DIR)
+for file in [TENDERS_FILE, BIDDERS_FILE]:
+    if not os.path.exists(file):
+        with open(file, "w") as f:
+            json.dump([], f)
+
 def get_tenders():
-    try:
-        with open("tenders.json", "r") as f:
-            return json.load(f)
-    except Exception as e:
-        print(f"Error loading tenders: {e}")
+    with open(TENDERS_FILE, "r") as f:
+        return json.load(f)
+
+def compare_submission(bidder_id, tender_name, submission_docs, submission_text):
+    with open(TENDERS_FILE, "r") as f:
+        tenders = json.load(f)
+    with open(BIDDERS_FILE, "r") as f:
+        bidders = json.load(f)
+
+    tender = next((t for t in tenders if t['name'] == tender_name), None)
+    bidder = next((b for b in bidders if b['id'] == bidder_id), None)
+
+    if not tender or not bidder:
+        return {"probability": 0, "missing_docs": [], "present_docs": []}
+
+    required = tender['required_docs']
+    present_docs = [d for d in submission_docs if d in required]
+    missing_docs = [d for d in required if d not in submission_docs]
+
+    base_prob = 50
+    prob = base_prob + len(present_docs) * 10 - len(missing_docs) * 15
+    if any(k.lower() in submission_text.lower() for k in tender['keywords']):
+        prob += 20
+
+    prob = max(0, min(100, prob))
+
+    return {"probability": prob, "present_docs": present_docs, "missing_docs": missing_docs}
+
+def all_bidders_probabilities(tender_name):
+    with open(TENDERS_FILE, "r") as f:
+        tenders = json.load(f)
+    with open(BIDDERS_FILE, "r") as f:
+        bidders = json.load(f)
+
+    tender = next((t for t in tenders if t['name'] == tender_name), None)
+    if not tender:
         return []
 
-# Load bidders from JSON
-def get_bidders():
-    try:
-        with open("bidders.json", "r") as f:
-            return json.load(f)
-    except Exception as e:
-        print(f"Error loading bidders: {e}")
-        return []
-
-# Compare bidder submission against a tender
-def compare_submission(bidder, tender):
-    required_docs = tender.get("required_documents", [])
-    provided_docs = bidder.get("documents", [])
-
-    # Match required vs provided docs
-    matched = sum(1 for doc in required_docs if doc in provided_docs)
-    doc_score = (matched / len(required_docs)) * 100 if required_docs else 100
-
-    # Get bidder rating
-    rating_score = bidder.get("rating", 50)  # default rating = 50 if missing
-
-    # Final probability = 50% docs + 50% rating
-    probability = int((doc_score * 0.5) + (rating_score * 0.5))
-
-    return {
-        "probability": probability,
-        "missing": [doc for doc in required_docs if doc not in provided_docs],
-    }
-
-# Calculate probabilities for all bidders for a tender
-def all_bidders_probabilities(tender):
-    bidders = get_bidders()
     results = []
     for bidder in bidders:
-        comparison = compare_submission(bidder, tender)
+        random_prob = random.randint(30, 90)
         results.append({
-            "bidder_name": bidder.get("name", "Unknown"),
-            "probability": comparison["probability"],
-            "missing": comparison["missing"],
+            "bidder_id": bidder['id'],
+            "bidder_name": bidder['name'],
+            "probability": random_prob
         })
     return results
 
-# New: bidder submits a proposal (optional text + docs)
-def submit_proposal(bidder_name, tender_name, proposal_text):
-    proposals_file = "proposals.json"
-    data = []
-    if os.path.exists(proposals_file):
-        with open(proposals_file, "r") as f:
-            try:
-                data = json.load(f)
-            except:
-                data = []
+def submit_proposal(bidder_id, tender_name, submission_docs, submission_text):
+    with open(TENDERS_FILE, "r") as f:
+        tenders = json.load(f)
 
-    data.append({
-        "bidder": bidder_name,
-        "tender": tender_name,
-        "proposal": proposal_text
-    })
+    for tender in tenders:
+        if tender['name'] == tender_name:
+            tender['submissions'].append({
+                "bidder_id": bidder_id,
+                "documents": submission_docs,
+                "text": submission_text
+            })
 
-    with open(proposals_file, "w") as f:
-        json.dump(data, f, indent=2)
-    return True
+    with open(TENDERS_FILE, "w") as f:
+        json.dump(tenders, f, indent=2)
+

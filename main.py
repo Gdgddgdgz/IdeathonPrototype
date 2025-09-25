@@ -4,9 +4,22 @@ from bidder_upload import add_bidder
 from bidder_dashboard import compare_submission, get_tenders, all_bidders_probabilities, submit_proposal
 import json
 import plotly.express as px
+import os
 
 st.set_page_config(page_title="TenderX", layout="wide")
-st.title("📝 TenderX Hackathon Prototype")
+st.title("📝 TenderX Ideathon Prototype")
+
+# ------------------ Ensure required folders and files exist ------------------
+if not os.path.exists("data"):
+    os.makedirs("data")
+
+TENDERS_FILE = "data/tenders.json"
+BIDDERS_FILE = "data/bidders.json"
+
+for file in [TENDERS_FILE, BIDDERS_FILE]:
+    if not os.path.exists(file):
+        with open(file, "w") as f:
+            json.dump([], f)
 
 # ------------------ Sidebar ------------------
 menu = st.sidebar.radio("Navigate", ["Tender Creator", "Bidder", "FAQs"])
@@ -39,19 +52,28 @@ if menu == "Tender Creator":
 elif menu == "Bidder":
     st.header("👤 Bidder Dashboard")
 
-    bidder_id = st.number_input("Enter Bidder ID (0 to create new bidder)", min_value=0, step=1)
+    # Initialize session state
+    if "compare_result" not in st.session_state:
+        st.session_state.compare_result = None
+    if "bidder_id" not in st.session_state:
+        st.session_state.bidder_id = 0
+
+    bidder_id = st.number_input(
+        "Enter Bidder ID (0 to create new bidder)",
+        min_value=0, step=1,
+        value=st.session_state.bidder_id
+    )
+    st.session_state.bidder_id = bidder_id
     create_new = bidder_id == 0
 
     company_info = {
-        1: ["Company: Bidder 1",
-            "Started in 2015",
-            "Provides Road infrastructure solutions",
-            "Specializes in highway construction"],
-        2: ["Company: Bidder 2",
-            "Started in 2018",
-            "Provides  bridge construction services",
-            "Specializes in  bridge infrastructure projects"],
+        1: ["Company: Bidder 1", "Started in 2015", "Provides Road infrastructure solutions", "Specializes in highway construction"],
+        2: ["Company: Bidder 2", "Started in 2018", "Provides bridge construction services", "Specializes in bridge infrastructure projects"],
     }
+
+    # Load bidders safely
+    with open(BIDDERS_FILE) as f:
+        bidders = json.load(f)
 
     if create_new:
         st.subheader("Create New Bidder")
@@ -60,13 +82,12 @@ elif menu == "Bidder":
         if st.button("Add Bidder"):
             if bidder_name and docs:
                 documents = [d.strip() for d in docs.split(",")]
-                bidder_id = add_bidder(bidder_name, documents)
-                st.success(f"Bidder '{bidder_name}' added successfully with ID: {bidder_id}")
+                new_id = add_bidder(bidder_name, documents)
+                st.success(f"Bidder '{bidder_name}' added successfully with ID: {new_id}")
+                st.session_state.bidder_id = new_id
             else:
                 st.error("Please fill in all fields!")
     else:
-        with open("data/bidders.json") as f:
-            bidders = json.load(f)
         bidder = next((b for b in bidders if b['id'] == bidder_id), None)
         if not bidder:
             st.error("Bidder ID not found")
@@ -94,35 +115,42 @@ elif menu == "Bidder":
                         st.error("Enter documents and proposal text")
                     else:
                         submission_docs = [d.strip() for d in submission_docs_text.split(",")]
-                        result = compare_submission(bidder_id, selected_tender, submission_docs, submission_text)
-                        if result:
-                            prob = result['probability']
-                            color = "green" if prob>=70 else ("orange" if prob>=50 else "red")
-                            st.markdown(f"**Probability of Winning:** <span style='color:{color}'>{prob}%</span>", unsafe_allow_html=True)
+                        st.session_state.compare_result = compare_submission(
+                            bidder_id, selected_tender, submission_docs, submission_text
+                        )
 
-                            st.markdown("**Documents Status:**")
-                            for doc in result['present_docs']:
-                                st.markdown(f"✅ {doc}")
-                            for doc in result['missing_docs']:
-                                st.markdown(f"❌ {doc}")
+                if st.session_state.compare_result:
+                    result = st.session_state.compare_result
+                    prob = result['probability']
+                    color = "green" if prob >= 70 else ("orange" if prob >= 50 else "red")
+                    st.markdown(f"**Probability of Winning:** <span style='color:{color}'>{prob}%</span>", unsafe_allow_html=True)
 
-                            st.progress(prob)
+                    st.markdown("**Documents Status:**")
+                    for doc in result['present_docs']:
+                        st.markdown(f"✅ {doc}")
+                    for doc in result['missing_docs']:
+                        st.markdown(f"❌ {doc}")
 
-                            if result['missing_docs']:
-                                st.warning(f"Missing docs: {', '.join(result['missing_docs'])}")
-                            if prob < 50:
-                                st.info("Consider improving proposal or submitting missing documents.")
+                    st.progress(prob)
 
-                            all_probs = all_bidders_probabilities(selected_tender)
-                            if all_probs:
-                                fig = px.bar(all_probs, x="bidder_name", y="probability", color="probability",
-                                             color_continuous_scale=["red","orange","green"])
-                                fig.update_layout(title=f"All Bidders Probability for '{selected_tender}'")
-                                st.plotly_chart(fig, use_container_width=True)
+                    if result['missing_docs']:
+                        st.warning(f"Missing docs: {', '.join(result['missing_docs'])}")
+                    if prob < 50:
+                        st.info("Consider improving proposal or submitting missing documents.")
 
-                            if st.button("Submit Proposal to Tender"):
-                                submit_proposal(bidder_id, selected_tender, submission_docs, submission_text)
-                                st.success("Proposal submitted successfully!")
+                    all_probs = all_bidders_probabilities(selected_tender)
+                    if all_probs:
+                        fig = px.bar(
+                            all_probs, x="bidder_name", y="probability",
+                            color="probability",
+                            color_continuous_scale=["red", "orange", "green"]
+                        )
+                        fig.update_layout(title=f"All Bidders Probability for '{selected_tender}'")
+                        st.plotly_chart(fig, use_container_width=True)
+
+                    if st.button("Submit Proposal to Tender"):
+                        submit_proposal(bidder_id, selected_tender, submission_docs, submission_text)
+                        st.success("Proposal submitted successfully!")
 
 # ------------------ FAQS PAGE ------------------
 elif menu == "FAQs":
@@ -142,4 +170,3 @@ elif menu == "FAQs":
 
     with st.expander("Can I see why my profile is low-rated?"):
         st.write("Feedback includes missing docs and proposal match against tender.")
-

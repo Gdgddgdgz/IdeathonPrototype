@@ -1,20 +1,30 @@
 import json
+import os
+
+DATA_DIR = "data"
+BIDDERS_FILE = os.path.join(DATA_DIR, "bidders.json")
+
+# Ensure data dir and file exist
+if not os.path.exists(DATA_DIR):
+    os.makedirs(DATA_DIR)
+if not os.path.exists(BIDDERS_FILE):
+    with open(BIDDERS_FILE, "w") as f:
+        json.dump([], f)
 
 def add_bidder(name, documents):
-    """
-    Adds a new bidder to bidders.json
-    """
-    new_bidder = {"id": None, "name": name, "documents": documents}
+    with open(BIDDERS_FILE, "r") as f:
+        bidders = json.load(f)
 
-    try:
-        with open("data/bidders.json") as f:
-            bidders = json.load(f)
-    except FileNotFoundError:
-        bidders = []
-
-    new_bidder["id"] = max([b['id'] for b in bidders], default=0) + 1
+    new_id = len(bidders) + 1
+    new_bidder = {
+        "id": new_id,
+        "name": name,
+        "documents": documents
+    }
     bidders.append(new_bidder)
 
-    with open("data/bidders.json", "w") as f:
-        json.dump(bidders, f, indent=4)
-    return new_bidder["id"]
+    with open(BIDDERS_FILE, "w") as f:
+        json.dump(bidders, f, indent=2)
+
+    return new_id
+
