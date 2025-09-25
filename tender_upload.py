@@ -4,7 +4,6 @@ import os
 DATA_DIR = "data"
 TENDERS_FILE = os.path.join(DATA_DIR, "tenders.json")
 
-# Ensure data dir and file exist
 if not os.path.exists(DATA_DIR):
     os.makedirs(DATA_DIR)
 if not os.path.exists(TENDERS_FILE):

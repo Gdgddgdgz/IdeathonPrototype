@@ -4,7 +4,6 @@ import os
 DATA_DIR = "data"
 BIDDERS_FILE = os.path.join(DATA_DIR, "bidders.json")
 
-# Ensure data dir and file exist
 if not os.path.exists(DATA_DIR):
     os.makedirs(DATA_DIR)
 if not os.path.exists(BIDDERS_FILE):
@@ -27,4 +26,5 @@ def add_bidder(name, documents):
         json.dump(bidders, f, indent=2)
 
     return new_id
+
 
